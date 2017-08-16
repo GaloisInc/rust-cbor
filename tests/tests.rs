@@ -248,3 +248,37 @@ fn return_error_on_incomplete_read() {
     let mut dec = Decoder::from_bytes(&buf[0..4]);
     assert!(dec.decode::<String>().next().unwrap().is_err());
 }
+
+#[test]
+fn validate_example_indefinite_bytes() {
+    let cases = vec![
+        // 2 chunks (with unicode)
+        ("exampleα≤β", vec![0x5fu8, 0x47, 101, 120, 97, 109, 112, 108, 101, 0x47, 206, 177, 226, 137, 164, 206, 178, 0xff]),
+        // 1 chunk
+        ("example", vec![0x5fu8, 0x47, 101, 120, 97, 109, 112, 108, 101, 0xff]),
+        // 0 chunks
+        ("", vec![0x5fu8, 0xff]),
+        // empty chunk
+        ("", vec![0x5fu8, 0x40, 0xff]), ];
+    for (str, buf) in cases {
+        let mut dec = Decoder::from_bytes(buf);
+        assert!(dec.decode::<Vec<u8>>().next().unwrap().unwrap() == str.as_bytes());
+    }
+}
+
+#[test]
+fn validate_example_indefinite_string() {
+    let cases = vec![
+        // 2 chunks (with unicode)
+        ("exampleα≤β", vec![0x7fu8, 0x67, 101, 120, 97, 109, 112, 108, 101, 0x67, 206, 177, 226, 137, 164, 206, 178, 0xff]),
+        // 1 chunk
+        ("example", vec![0x7fu8, 0x67, 101, 120, 97, 109, 112, 108, 101, 0xff]),
+        // 0 chunks
+        ("", vec![0x7fu8, 0xff]),
+        // empty chunk
+        ("", vec![0x7fu8, 0x60, 0xff]), ];
+    for (str, buf) in cases {
+        let mut dec = Decoder::from_bytes(buf);
+        assert!(dec.decode::<String>().next().unwrap().unwrap() == str);
+    }
+}
